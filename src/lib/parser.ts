@@ -122,7 +122,6 @@ function extractLinesWithLinks($: cheerio.CheerioAPI): LineWithLinks[] {
 
   // Process the body content, splitting by common email structure elements
   // Newsletter emails use <tr>, <td>, <p>, <div> for structure
-  const blocks: cheerio.Cheerio<cheerio.Element>[] = [];
 
   $("td, p, div, li").each((_, el) => {
     const $el = $(el);
