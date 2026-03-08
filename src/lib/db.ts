@@ -134,11 +134,43 @@ export async function getAllTools() {
   return result.rows;
 }
 
+export async function getToolById(
+  id: number
+): Promise<{ name: string; favorited: number } | null> {
+  await ensureTables();
+  const result = await db.execute({
+    sql: "SELECT name, favorited FROM tools WHERE id = ?",
+    args: [id],
+  });
+  if (result.rows.length === 0) return null;
+  const row = result.rows[0] as Record<string, unknown>;
+  const fav = row.favorited ?? row.Favorited;
+  const favorited =
+    fav === true || fav === 1 || fav === "1" ? 1 : 0;
+  return {
+    name: row.name as string,
+    favorited,
+  };
+}
+
 export async function toggleFavorite(id: number) {
   await ensureTables();
   await db.execute({
     sql: "UPDATE tools SET favorited = NOT favorited WHERE id = ?",
     args: [id],
+  });
+}
+
+/** Set favorited (0 or 1) for all rows with the same normalized name. */
+export async function setFavoritedByNormalizedName(
+  normalizedName: string,
+  favorited: number
+) {
+  await ensureTables();
+  await db.execute({
+    sql:
+      "UPDATE tools SET favorited = ? WHERE LOWER(TRIM(name)) = ?",
+    args: [favorited, normalizedName],
   });
 }
 

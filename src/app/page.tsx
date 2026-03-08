@@ -42,10 +42,10 @@ export default function Home() {
       .catch(console.error);
   }, []);
 
-  // Fetch tools
-  const fetchTools = useCallback(() => {
-    setLoading(true);
-    fetch("/api/tools")
+  // Fetch tools (no-cache so favorites and list stay in sync with server)
+  const fetchTools = useCallback((showLoading = true) => {
+    if (showLoading) setLoading(true);
+    fetch("/api/tools", { cache: "no-store" })
       .then((r) => r.json())
       .then((data) => {
         setTools(
@@ -98,15 +98,21 @@ export default function Home() {
 
   // Actions
   const toggleFavorite = async (id: number) => {
-    // Optimistic update
     setTools((prev) =>
       prev.map((t) => (t.id === id ? { ...t, favorited: !t.favorited } : t))
     );
-    await fetch("/api/favorites", {
+    const res = await fetch("/api/favorites", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action: "toggle_favorite", id }),
     });
+    if (res.ok) {
+      fetchTools(false);
+    } else {
+      setTools((prev) =>
+        prev.map((t) => (t.id === id ? { ...t, favorited: !t.favorited } : t))
+      );
+    }
   };
 
   const updateCategory = async (id: number, category: string) => {
