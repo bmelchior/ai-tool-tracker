@@ -95,6 +95,15 @@ export async function saveTokens(
   });
 }
 
+/** Remove stored tokens (e.g. after invalid_grant so the user can reconnect). */
+export async function clearAuth() {
+  await ensureTables();
+  await db.execute({
+    sql: "DELETE FROM auth WHERE id = 1",
+    args: [],
+  });
+}
+
 // ── Tool helpers ──
 
 export async function insertTool(tool: {

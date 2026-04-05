@@ -31,8 +31,7 @@ export default function Home() {
   const [sectionFilter, setSectionFilter] = useState<SectionFilter>("all");
   const [view, setView] = useState<View>("all");
 
-  // Fetch auth status
-  useEffect(() => {
+  const refreshAuth = useCallback(() => {
     fetch("/api/auth")
       .then((r) => r.json())
       .then((data) => {
@@ -41,6 +40,10 @@ export default function Home() {
       })
       .catch(console.error);
   }, []);
+
+  useEffect(() => {
+    refreshAuth();
+  }, [refreshAuth]);
 
   // Fetch tools (no-cache so favorites and list stay in sync with server)
   const fetchTools = useCallback((showLoading = true) => {
@@ -158,6 +161,7 @@ export default function Home() {
               authenticated={authenticated}
               authUrl={authUrl}
               onSyncComplete={fetchTools}
+              onSessionInvalid={refreshAuth}
             />
           </div>
         </div>

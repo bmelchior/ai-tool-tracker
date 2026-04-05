@@ -1,7 +1,12 @@
 import { NextResponse } from "next/server";
 import { google } from "googleapis";
 import { getOAuthClient, isAuthenticated } from "@/lib/gmail";
-import { insertTool, checkEmailProcessed, updateSyncState } from "@/lib/db";
+import {
+  insertTool,
+  checkEmailProcessed,
+  updateSyncState,
+  clearAuth,
+} from "@/lib/db";
 import { parseNewsletter, parseNewsletterPlainText } from "@/lib/parser";
 
 export async function POST() {
@@ -76,13 +81,29 @@ export async function POST() {
       newTools: newToolsCount,
       totalEmails: messages.length,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Sync error:", error);
-    return NextResponse.json(
-      { error: error.message || "Sync failed" },
-      { status: 500 }
-    );
+    if (isInvalidGrantError(error)) {
+      await clearAuth();
+      return NextResponse.json(
+        {
+          error:
+            "Google access expired or was revoked. Use Connect Gmail to sign in again.",
+          code: "REAUTH_REQUIRED",
+        },
+        { status: 401 }
+      );
+    }
+    const message =
+      error instanceof Error ? error.message : "Sync failed";
+    return NextResponse.json({ error: message }, { status: 500 });
   }
+}
+
+function isInvalidGrantError(error: unknown): boolean {
+  const data = (error as { response?: { data?: { error?: string } } })
+    ?.response?.data;
+  return data?.error === "invalid_grant";
 }
 
 function extractBody(payload: any): { html: string; text: string } {
